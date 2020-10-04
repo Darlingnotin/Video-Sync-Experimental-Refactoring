@@ -1,0 +1,248 @@
+<html>
+
+<head>
+    <title>Video Sync Interface</title>
+    <style>
+        .slidecontainer {
+            width: 100%;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 15px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #1f1f1f;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #4245f8;
+            cursor: pointer;
+        }
+
+        input[type=text],
+
+        select {
+            width: 450px;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #dddddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .myButton {
+            box-shadow: inset 0px 1px 0px 0px #ffffff;
+            background: linear-gradient(to bottom, #ededed 5%, #dfdfdf 100%);
+            background-color: #ededed;
+            border-radius: 6px;
+            border: 1px solid #dcdcdc;
+            display: inline-block;
+            cursor: pointer;
+            color: #777777;
+            font-family: Arial;
+            font-size: 15px;
+            font-weight: bold;
+            padding: 6px 24px;
+            text-decoration: none;
+            text-shadow: 0px 1px 0px #ffffff;
+        }
+
+        .myButton:hover {
+            background: linear-gradient(to bottom, #dfdfdf 5%, #ededed 100%);
+            background-color: #dfdfdf;
+        }
+
+        .myButton:active {
+            position: relative;
+            top: 1px;
+        }
+
+        .myButtonActivated {
+            box-shadow: inset 0px 1px 0px 0px #ffffff;
+            background: linear-gradient(to bottom, #666666 5%, #4e4e4e 100%);
+            background-color: #ededed;
+            border-radius: 6px;
+            border: 1px solid #dcdcdc;
+            display: inline-block;
+            cursor: pointer;
+            color: #e2e2e2;
+            font-family: Arial;
+            font-size: 15px;
+            font-weight: bold;
+            padding: 6px 24px;
+            text-decoration: none;
+            text-shadow: 0px 1px 0px #ffffff;
+        }
+
+        .myButtonActivated:hover {
+            background: linear-gradient(to bottom, #8b8b8b 5%, #2e2e2e 100%);
+            background-color: #dfdfdf;
+        }
+
+        .myButtonActivated:active {
+            position: relative;
+            top: 1px;
+        }
+    </style>
+</head>
+
+<body onload="RequestVideoLengthAndTimeStamp()">
+    <h2>Enter new video URL</h2>
+    <input type="text" id="videoURL" onfocus="this.value=''" placeholder="Enter video URL here"><br><br>
+    <button class="myButton" onclick="newVideoURL()">Play video</button><br><br>
+    <div class="slidecontainer">
+        <h2>Video slider</h2>
+        <input type="range" min="0" max="2" value="1" step="0.01" class="slider" id="videoRange">
+    </div>
+    <h2 id="checkMark"></h2>
+    <p id="description"></p>
+</body>
+<script>
+    var timeoutIs = false;
+    var slider = document.getElementById("videoRange");
+    var myTimeStamp = Date.now();
+    var videoLength = 2;
+    var myButtonActivated = 0;
+    var descriptionIsLoopingStartAtBeginning = "While this is chosen after the video has ended when a new person joins. The video will start at the beginning.";
+    var descriptionLoop = "While this is chosen the Video will continue to loop in the background whether somebody is watching it or not. When somebody knew joins. The video will begin playing at its current time. Whether anybody is watching it or not.";
+    slider.oninput = function () {
+        if (!timeoutIs) {
+            setTimeout(() => {
+                timeoutIs = false;
+                var readyEvent = {
+                    "action": "play",
+                    "timeStamp": parseInt(this.value)
+                };
+                EventBridge.emitWebEvent(JSON.stringify(readyEvent));
+            }, 1000);
+            timeoutIs = true;
+        }
+    }
+    function newVideoURL() {
+        videoURL = document.getElementById("videoURL").value;
+        var readyEvent = {
+            "action": "nowVideoFromTablet",
+            "timeStamp": 0,
+            "videoUrl": videoURL,
+            "myTimeStamp": myTimeStamp
+        };
+        EventBridge.emitWebEvent(JSON.stringify(readyEvent));
+        document.getElementById("checkMark").innerHTML = "";
+    }
+
+    function RequestVideoLengthAndTimeStamp() {
+        var readyEvent = {
+            "action": "RequestVideoLengthAndTimeStamp",
+            "myTimeStamp": myTimeStamp
+        };
+        EventBridge.emitWebEvent(JSON.stringify(readyEvent));
+    }
+
+    function loopVideoFunction() {
+        if (myButtonActivated == 0) {
+            var readyEvent = {
+                "action": "loop",
+                "videoLength": videoLength,
+                "myTimeStamp": myTimeStamp
+            };
+            EventBridge.emitWebEvent(JSON.stringify(readyEvent));
+            document.getElementById("loopVideoButton").innerHTML = "Loop Video Start At Beginning";
+            document.getElementById("checkMark").innerHTML = "<h3><span>&#10003;</span> Loop</h3>";
+            document.getElementById("description").innerHTML = "<h3>" + descriptionLoop + "</h3>";
+            myButtonActivated = 1;
+        } else if (myButtonActivated == 1) {
+            var readyEvent = {
+                "action": "loopVideoStartAtBeginning",
+                "videoLength": videoLength,
+                "myTimeStamp": myTimeStamp
+            };
+            EventBridge.emitWebEvent(JSON.stringify(readyEvent));
+            document.getElementById("loopVideoButton").innerHTML = "Stop Looping Video";
+            document.getElementById("checkMark").innerHTML = "<h3><span>&#10003;</span> Loop Video Start At Beginning</h3>";
+            document.getElementById("description").innerHTML = "<h3>" + descriptionIsLoopingStartAtBeginning + "</h3>";
+            myButtonActivated = 2;
+        } else if (myButtonActivated == 2) {
+            var readyEvent = {
+                "action": "stopLoop",
+                "myTimeStamp": myTimeStamp
+            };
+            EventBridge.emitWebEvent(JSON.stringify(readyEvent));
+            document.getElementById("loopVideoButton").innerHTML = "Loop Video";
+            document.getElementById("checkMark").innerHTML = "";
+            document.getElementById("description").innerHTML = "";
+            myButtonActivated = 0;
+        }
+    }
+
+    EventBridge.scriptEventReceived.connect(function (message) {
+        var messageData = JSON.parse(message);
+        if (messageData.action == "RequestVideoLengthAndTimeStampResponse") {
+            if (messageData.myTimeStamp == myTimeStamp) {
+                document.getElementById("videoRange").max = messageData.length;
+                document.getElementById("videoRange").value = messageData.timeStamp;
+                videoLength = messageData.length;
+            }
+        } else if (messageData.action == "requestVideoPlayingStatusServerReply") {
+            if (messageData.isLooping && !messageData.isLoopingStartAtBeginning) {
+                document.getElementById("loopVideoButton").innerHTML = "Loop Video Start At Beginning";
+                document.getElementById("checkMark").innerHTML = "<h3><span>&#10003;</span> Loop</h3>";
+                document.getElementById("description").innerHTML = "<h3>" + descriptionLoop + "</h3>";
+                document.getElementById("videoURL").value = messageData.videoUrl;
+                myButtonActivated = 1;
+            } else if (!messageData.isLooping && messageData.isLoopingStartAtBeginning) {
+                document.getElementById("loopVideoButton").innerHTML = "Stop Looping Video";
+                document.getElementById("checkMark").innerHTML = "<h3><span>&#10003;</span> Loop Video Start At Beginning</h3>";
+                document.getElementById("description").innerHTML = "<h3>" + descriptionIsLoopingStartAtBeginning + "</h3>";
+                document.getElementById("videoURL").value = messageData.videoUrl;
+                myButtonActivated = 2;
+            } else if (!messageData.isLooping && !messageData.isLoopingStartAtBeginning) {
+                document.getElementById("loopVideoButton").innerHTML = "Loop Video";
+                document.getElementById("checkMark").innerHTML = "";
+                document.getElementById("description").innerHTML = "";
+                document.getElementById("videoURL").value = messageData.videoUrl;
+                myButtonActivated = 0;
+            }
+        } else if (messageData.action == "loop" && messageData.myTimeStamp != myTimeStamp) {
+            document.getElementById("loopVideoButton").innerHTML = "Loop Video Start At Beginning";
+            document.getElementById("checkMark").innerHTML = "<h3><span>&#10003;</span> Loop</h3>";
+            document.getElementById("description").innerHTML = "<h3>" + descriptionLoop + "</h3>";
+            myButtonActivated = 1;
+        } else if (messageData.action == "loopVideoStartAtBeginning" && messageData.myTimeStamp != myTimeStamp) {
+            document.getElementById("loopVideoButton").innerHTML = "Stop Looping Video";
+            document.getElementById("checkMark").innerHTML = "<h3><span>&#10003;</span> Loop Video Start At Beginning</h3>";
+            document.getElementById("description").innerHTML = "<h3>" + descriptionIsLoopingStartAtBeginning + "</h3>";
+            myButtonActivated = 2;
+        } else if (messageData.action == "stopLoop" && messageData.myTimeStamp != myTimeStamp) {
+            document.getElementById("loopVideoButton").innerHTML = "Loop Video";
+            document.getElementById("checkMark").innerHTML = "";
+            document.getElementById("description").innerHTML = "";
+            myButtonActivated = 0;
+        }
+    });
+
+</script>
+
+</html>

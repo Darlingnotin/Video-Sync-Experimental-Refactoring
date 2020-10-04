@@ -1,0 +1,181 @@
+<html>
+
+<head>
+  <title>Video Sync</title>
+  <style>
+    #video {
+      width: 100%;
+      height: auto;
+    }
+
+    #video-container-play-button {
+      width: 100vw;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-position: center center;
+      background-color: rgba(0, 0, 0, 0.5);
+      background-image: url('assets/play_btn.png');
+    }
+
+    *::-webkit-media-controls-panel {
+      display: none !important;
+      -webkit-appearance: none;
+    }
+
+    div.volumeIs {
+      position: absolute;
+      top: 20px;
+    }
+
+    strong {
+      background: rgba(0, 0, 0, 0.5);
+      display: inline-block;
+      border-radius: 16px;
+      padding: 0 20px;
+    }
+  </style>
+</head>
+
+<body bgcolor="#333333">
+  <div id="video-container" onclick="requestSync()">
+    <video id="video" poster="assets/clickToWatch.png" controls autoplay>
+      <source id="mp4_src" src=" " type="video/webm">
+    </video>
+  </div>
+
+  <script>
+    var firstTime = true;
+    var myTimeStamp = Date.now();
+    var HasBeenClicked = false;
+    var videoLoaded = false;
+
+    function requestSync() {
+      if (firstTime) {
+        HasBeenClicked = true;
+        var readyEvent = {
+          action: 'requestSync',
+          myTimeStamp: myTimeStamp
+        };
+        EventBridge.emitWebEvent(JSON.stringify(readyEvent));
+      }
+    }
+    EventBridge.scriptEventReceived.connect(function (message) {
+      var messageData = JSON.parse(message);
+      if (messageData.action == 'play' && !firstTime) {
+        document.getElementById('video').play();
+        document.getElementById('video').currentTime = messageData.timeStamp;
+      } else if (messageData.action == 'pause' && !firstTime) {
+        document.getElementById('video').pause();
+      } else if (messageData.action == 'now' && messageData.myTimeStamp != myTimeStamp) {
+        if (!firstTime || HasBeenClicked) {
+          document.getElementById('video').src = messageData.videoUrl;
+          firstTime = false;
+        }
+      } else if (messageData.action == 'sync' && messageData.myTimeStamp == myTimeStamp) {
+        if (firstTime) {
+          document.getElementById('video').src = messageData.videoUrl;
+          document.getElementById('video').currentTime = messageData.timeStamp;
+          firstTime = false;
+          if (!messageData.videoPlaying) {
+            var vid = document.getElementById("video");
+            vid.onloadeddata = function () {
+              document.getElementById('video').pause();
+            };
+          }
+        }
+      } else if (messageData.action == 'ping' && !firstTime) {
+        var video = document.getElementById('video');
+        var myVideoCurrentTimeStamp = video.currentTime;
+        var ping = messageData.timeStamp;
+        if (ping + 2 > myVideoCurrentTimeStamp && ping - 2 < myVideoCurrentTimeStamp) {
+        } else {
+          document.getElementById('video').currentTime = messageData.timeStamp;
+        }
+      } else if (messageData.action == "nowVideoFromTablet") {
+        videoLoaded = false;
+        document.getElementById('video').src = messageData.videoUrl;
+        firstTime = false;
+        var v = document.getElementById('video');
+        v.onloadeddata = function () {
+          videoLoaded = true;
+        };
+        var videoLoadedSendMessageInterval = setInterval(() => {
+          if (videoLoaded) {
+            var v = document.getElementById('video');
+            var readyEvent = {
+              action: "now",
+              videoUrl: messageData.videoUrl,
+              length: v.duration,
+              timeStamp: v.currentTime,
+              myTimeStamp: myTimeStamp
+            };
+            EventBridge.emitWebEvent(JSON.stringify(readyEvent));
+            clearInterval(videoLoadedSendMessageInterval);
+            videoLoaded = false;
+          }
+        }, 100);
+      } else if (messageData.action == "buttonAction") {
+        if (messageData.buttonAction == "leave") {
+          document.getElementById('video').src = "http://";
+          firstTime = true;
+          HasBeenClicked = false;
+        } else if (messageData.buttonAction == "volumeButtonMinus") {
+          var video = document.getElementById('video');
+          var volume = video.volume;
+          var chosenVolume;
+          if (volume - 0.1 < 0.1) {
+            chosenVolume = 0;
+          } else {
+            chosenVolume = volume - 0.1;
+          }
+          video.volume = chosenVolume.toFixed(1);
+        } else if (messageData.buttonAction == "volumeButtonPlus") {
+          var video = document.getElementById('video');
+          var volume = video.volume;
+          var chosenVolume;
+          if (video.volume.toFixed(1) == 1) {
+            chosenVolume = 1;
+          } else {
+            chosenVolume = volume + 0.1;
+          }
+          video.volume = chosenVolume.toFixed(1);
+        } else if (messageData.buttonAction == "pause" && !firstTime) {
+          sendButtonAction(messageData.buttonAction);
+        } else if (messageData.buttonAction == "play" && !firstTime) {
+          sendButtonAction(messageData.buttonAction);
+        }
+      } else if (messageData.action == "RequestVideoLengthAndTimeStamp") {
+        var v = document.getElementById('video');
+        var readyEvent = {
+          action: "RequestVideoLengthAndTimeStampResponse",
+          length: v.duration,
+          timeStamp: v.currentTime,
+          myTimeStamp: messageData.myTimeStamp
+        };
+        EventBridge.emitWebEvent(JSON.stringify(readyEvent));
+      } else if (messageData.action == "volumeSlider") {
+        video = document.getElementById('video');
+        video.volume = parseFloat(messageData.volume);
+      }
+    });
+
+    function sendButtonAction(buttonAction) {
+      var readyEvent = {
+        "action": buttonAction,
+        "timeStamp": document.getElementById('video').currentTime,
+        "nowVideo": "false"
+      };
+      EventBridge.emitWebEvent(JSON.stringify(readyEvent));
+    }
+
+    vid = document.getElementById('myVideo');
+    vid.currentTime = 5;
+  </script>
+
+</body>
+
+</html>

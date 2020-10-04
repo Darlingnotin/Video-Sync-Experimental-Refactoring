@@ -1,0 +1,73 @@
+<html>
+
+<head>
+    <title>Video Sync Interface</title>
+    <style>
+        
+        body {
+            background-color: #333333;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 15px;
+            border-radius: 5px;
+            background: #a7a7a7;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #f5f5f5;
+            cursor: pointer;
+        }
+        
+    </style>
+</head>
+
+<body>
+    <div class="slidecontainer">
+        <h1 style="color:#f5f5f5;">Volume</h1>
+        <input type="range" min="0" max="1" value="1" step="0.01" class="slider" id="volumeSlider">
+    </div>
+</body>
+<script>
+    var slider = document.getElementById("volumeSlider");
+    var myTimeStamp = Date.now();
+    var timeoutIs = false;
+    slider.oninput = function () {
+        if (!timeoutIs) {
+            setTimeout(() => {
+                timeoutIs = false;
+                var readyEvent = {
+                    action: "volumeSlider",
+                    volume: this.value
+                };
+                EventBridge.emitWebEvent(JSON.stringify(readyEvent));
+            }, 300);
+            timeoutIs = true;
+        }
+    }
+
+    EventBridge.scriptEventReceived.connect(function (message) {
+        var messageData = JSON.parse(message);
+        if (messageData.action == "volumeChanged") {
+            document.getElementById("volumeSlider").value = parseFloat(messageData.volume);
+        }
+    });
+
+</script>
+
+</html>
