@@ -10,9 +10,15 @@
     var videoPlaying = false;
     var newVideoSent = false;
     var newVideoSender;
+    var videoPlayerChannel;
+
+    this.preload = function(entityID) {
+        videoPlayerChannel = entityID;
+        Messages.subscribe(videoPlayerChannel);
+    };
 
     function onMessageReceived(channel, message, sender, localOnly) {
-        if (channel != "videoPlayOnEntity") {
+        if (channel != videoPlayerChannel) {
             return;
         }
         messageData = JSON.parse(message);
@@ -52,7 +58,7 @@
                     myTimeStamp: messageData.myTimeStamp
                 };
                 var message = JSON.stringify(readyEvent);
-                Messages.sendMessage("videoPlayOnEntity", message);
+                Messages.sendMessage(videoPlayerChannel, message);
             }, 600);
         }
     }
@@ -66,16 +72,15 @@
                 messageData.timeStamp = timeStamp;
                 messageData.action = "ping";
                 var message = JSON.stringify(messageData);
-                Messages.sendMessage("videoPlayOnEntity", message);
+                Messages.sendMessage(videoPlayerChannel, message);
             }
         }, 1000);
     }
 
-    Messages.subscribe("videoPlayOnEntity");
     Messages.messageReceived.connect(onMessageReceived);
 
     this.unload = function () {
-        Messages.unsubscribe("videoPlayOnEntity");
+        Messages.unsubscribe(videoPlayerChannel);
         Messages.messageReceived.disconnect(onMessageReceived);
         if (intervalIsRunning) {
             Script.clearInterval(timeStampInterval);
