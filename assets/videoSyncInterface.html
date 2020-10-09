@@ -126,6 +126,7 @@
     var myTimeStamp = Date.now();
     var videoLength = 2;
     var myButtonActivated = 0;
+    var tabletId;
     var descriptionIsLoopingStartAtBeginning = "While this is chosen after the video has ended when a new person joins. The video will start at the beginning.";
     var descriptionLoop = "While this is chosen the Video will continue to loop in the background whether somebody is watching it or not. When somebody knew joins. The video will begin playing at its current time. Whether anybody is watching it or not.";
     slider.oninput = function () {
@@ -134,7 +135,9 @@
                 timeoutIs = false;
                 var readyEvent = {
                     "action": "play",
-                    "timeStamp": parseInt(this.value)
+                    "timeStamp": parseInt(this.value),
+                    "tabletId": tabletId,
+                    "tabletId": tabletId
                 };
                 EventBridge.emitWebEvent(JSON.stringify(readyEvent));
             }, 1000);
@@ -147,7 +150,8 @@
             "action": "nowVideoFromTablet",
             "timeStamp": 0,
             "videoUrl": videoURL,
-            "myTimeStamp": myTimeStamp
+            "myTimeStamp": myTimeStamp,
+            "tabletId": tabletId
         };
         EventBridge.emitWebEvent(JSON.stringify(readyEvent));
         document.getElementById("checkMark").innerHTML = "";
@@ -166,7 +170,8 @@
             var readyEvent = {
                 "action": "loop",
                 "videoLength": videoLength,
-                "myTimeStamp": myTimeStamp
+                "myTimeStamp": myTimeStamp,
+                "tabletId": tabletId
             };
             EventBridge.emitWebEvent(JSON.stringify(readyEvent));
             document.getElementById("loopVideoButton").innerHTML = "Loop Video Start At Beginning";
@@ -187,7 +192,8 @@
         } else if (myButtonActivated == 2) {
             var readyEvent = {
                 "action": "stopLoop",
-                "myTimeStamp": myTimeStamp
+                "myTimeStamp": myTimeStamp,
+                "tabletId": tabletId
             };
             EventBridge.emitWebEvent(JSON.stringify(readyEvent));
             document.getElementById("loopVideoButton").innerHTML = "Loop Video";
@@ -204,6 +210,7 @@
                 document.getElementById("videoRange").max = messageData.length;
                 document.getElementById("videoRange").value = messageData.timeStamp;
                 videoLength = messageData.length;
+                tabletId = messageData.tabletId;
             }
         } else if (messageData.action == "requestVideoPlayingStatusServerReply") {
             if (messageData.isLooping && !messageData.isLoopingStartAtBeginning) {
