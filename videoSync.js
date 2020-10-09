@@ -24,6 +24,8 @@
     var hasInteractedWithWebPage = false;
     var webPanelTimeStamp;
     var interfaceButtonActive = false;
+    var videoPlayerChannel;
+    var tabletOpen = false;
 
     function openVideoInter() {
         if (buttonsAreActive || interfaceButtonActive) {
@@ -36,16 +38,23 @@
     function onTabletWebEvent(event) {
         var webEventData = JSON.parse(event);
         console.log(JSON.stringify(webEventData));
-        if (webEventData.action == "nowVideoFromTablet") {
-            sendMessage(event);
+        if (webEventData.tabletId == videoPlayerChannel) {
+            if (webEventData.action == "nowVideoFromTablet") {
+                sendMessage(event);
+            } else if (webEventData.action == "play") {
+                Messages.sendMessage(videoPlayerChannel, event);
+            }
         } else if (webEventData.action == "RequestVideoLengthAndTimeStamp") {
-            sendMessage(event);
-        } else if (webEventData.action == "play") {
-            Messages.sendMessage("videoPlayOnEntity", event);
+            if (tabletOpen) {
+                tabletOpen = false;
+                sendMessage(event);
+            }
         }
     }
 
     script.preload = function (entityID) {
+        videoPlayerChannel = entityID;
+        Messages.subscribe(videoPlayerChannel);
         entity = Entities.getEntityProperties(entityID, ["position", "dimensions", "rotation", "serverScripts"]);
         Entities.editEntity(entityID, {
             sourceUrl: sourceUrl,
@@ -72,18 +81,19 @@
             if (messageData.action == "requestSync") {
                 webPanelTimeStamp = messageData.myTimeStamp;
             } else if (messageData.action == "RequestVideoLengthAndTimeStampResponse") {
-                tablet.emitScriptEvent(event);
+                messageData.tabletId = videoPlayerChannel;
+                tablet.emitScriptEvent(JSON.stringify(messageData));
                 return;
             } else if (messageData.action == "volumeSlider") {
                 sendMessage(event);
                 return;
             }
-            Messages.sendMessage("videoPlayOnEntity", event);
+            Messages.sendMessage(videoPlayerChannel, event);
         }
     }
 
     function onMessageReceived(channel, message, sender, localOnly) {
-        if (channel != "videoPlayOnEntity") {
+        if (channel != videoPlayerChannel) {
             return;
         }
         var messageData = JSON.parse(message);
@@ -214,7 +224,7 @@
             type: "Web",
             dpi: 8,
             sourceUrl: volumeSliderSourceUrl,
-            parentID: uuid,
+            parentID: _entityID,
             //visible: false,
             dimensions: {
                 "x": 1.3687,
@@ -258,6 +268,7 @@
                 break;
             case videoInterfaceButtonUuid:
                 console.log("videoInterfaceButton Yes");
+                tabletOpen = true;
                 openVideoInter();
                 break;
         }
@@ -267,6 +278,10 @@
         Entities.editEntity(videoInterfaceButtonUuid, {
             visible: true,
             position: Vec3.sum(entity.position, Vec3.multiplyQbyV(entity.rotation, { x: entity.dimensions.x / 2 - entity.dimensions.x + 0.5, y: entity.dimensions.y / 2 + 0.4, z: 0 }))
+        });
+        Entities.editEntity(leaveButtonUuid, {
+            visible: true,
+            position: Vec3.sum(entity.position, Vec3.multiplyQbyV(entity.rotation, { x: entity.dimensions.x / 2 - entity.dimensions.x - -0.2, y: entity.dimensions.y / 2 - entity.dimensions.y - 0.2, z: 0 }))
         });
     }
 
@@ -330,10 +345,9 @@
         Script.removeEventHandler(playButtonUuid, "mousePressOnEntity", evaluateWhichButtonPressed);
     }
 
-    Messages.subscribe("videoPlayOnEntity");
     Messages.messageReceived.connect(onMessageReceived);
     script.unload = function (entityID) {
-        Messages.unsubscribe("videoPlayOnEntity");
+        Messages.unsubscribe(videoPlayerChannel);
         Entities.deleteEntity(uuid);
         Messages.messageReceived.disconnect(onMessageReceived);
         Entities.webEventReceived.disconnect(onWebEvent);
