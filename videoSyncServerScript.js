@@ -11,10 +11,70 @@
     var newVideoSent = false;
     var newVideoSender;
     var videoPlayerChannel;
+    var wsUrl;
+    var ws;
+    var useGatewayServer = false;
+    var gatewayServerConnected = false;
+    var connectionAttempts = 0;
 
-    this.preload = function(entityID) {
+    function openWebSocket() {
+        var entityUserData = Entities.getEntityProperties(videoPlayerChannel, ["userData"]);
+        var UserData = JSON.parse(entityUserData.userData);
+        ws = new WebSocket(wsUrl);
+        ws.onopen = function() {
+            gatewayServerConnected = true;
+            connectionAttempts = 0;
+            UserData.serverConnected = true;
+            Entities.editEntity(videoPlayerChannel, {
+                userData: JSON.stringify(UserData)
+            });
+        }
+        ws.onmessage = function (evt) {
+            var wsMessageData = JSON.parse(evt.data);
+            if (wsMessageData.action == "requestSync") {
+                var readyEvent = {
+                    action: "sync",
+                    timeStamp: timeStamp,
+                    videoUrl: videoUrl,
+                    nowVideo: "false",
+                    videoPlaying: intervalIsRunning,
+                    myTimeStamp: wsMessageData.myTimeStamp
+                };
+                ws.send(JSON.stringify(readyEvent));
+            }
+        }
+        ws.onclose = function () {
+            gatewayServerConnected = false;
+            UserData.serverConnected = false;
+            Entities.editEntity(videoPlayerChannel, {
+                userData: JSON.stringify(UserData)
+            });
+            if (useGatewayServer) {
+                Script.setTimeout(function () {
+                    connectionAttempts++;
+                    openWebSocket();
+                    if (connectionAttempts >= 10) {
+                        useGatewayServer = false;
+                        UserData.useGatewayServer = false;
+                        Entities.editEntity(videoPlayerChannel, {
+                            userData: JSON.stringify(UserData)
+                        });
+                    }
+                }, 1000);
+            }
+        }
+    }
+
+    this.preload = function (entityID) {
+        var entityUserData = Entities.getEntityProperties(entityID, ["userData"]);
+        var UserData = JSON.parse(entityUserData.userData);
+        wsUrl = UserData.wsUrl;
         videoPlayerChannel = entityID;
         Messages.subscribe(videoPlayerChannel);
+        if (UserData.useGatewayServer) {
+            useGatewayServer = true;
+            openWebSocket();
+        }
     };
 
     function onMessageReceived(channel, message, sender, localOnly) {
@@ -34,6 +94,14 @@
             }
             intervalIsRunning = true;
             ping();
+            var wsNow = {
+                "action": "now",
+                "videoUrl": messageData.videoUrl,
+                "timeStamp": messageData.timeStamp
+            };
+            if (useGatewayServer && gatewayServerConnected) {
+                ws.send(JSON.stringify(wsNow));
+            }
         } else if (messageData.action == "play") {
             timeStamp = messageData.timeStamp;
             if (intervalIsRunning) {
@@ -42,9 +110,21 @@
             intervalIsRunning = true;
             videoPlaying = true;
             ping();
+            var wsPlay = {
+                "action": "play"
+            };
+            if (useGatewayServer && gatewayServerConnected) {
+                ws.send(JSON.stringify(wsPlay));
+            }
         } else if (messageData.action == "pause") {
             Script.clearInterval(timeStampInterval);
             intervalIsRunning = false;
+            var wsPause = {
+                "action": "pause"
+            };
+            if (useGatewayServer && gatewayServerConnected) {
+                ws.send(JSON.stringify(wsPause));
+            }
         } else if (messageData.action == "sync") {
             timeStamp = messageData.timeStamp;
         } else if (messageData.action == "requestSync") {
@@ -60,6 +140,11 @@
                 var message = JSON.stringify(readyEvent);
                 Messages.sendMessage(videoPlayerChannel, message);
             }, 600);
+        } else if (messageData.action == "videoSyncGateway") {
+            useGatewayServer = true;
+            wsUrl = "ws://" + messageData.gatewayIp + ":7080";
+            connectionAttempts = 0;
+            openWebSocket();
         }
     }
 
@@ -73,6 +158,9 @@
                 messageData.action = "ping";
                 var message = JSON.stringify(messageData);
                 Messages.sendMessage(videoPlayerChannel, message);
+                if (useGatewayServer && gatewayServerConnected) {
+                    ws.send(message);
+                }
             }
         }, 1000);
     }
