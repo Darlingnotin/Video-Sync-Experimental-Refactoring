@@ -26,6 +26,11 @@
     var interfaceButtonActive = false;
     var videoPlayerChannel;
     var tabletOpen = false;
+    var gatewayUserData = {
+        "useGatewayServer": false,
+        "wsUrl": "",
+        "serverConnected": false
+    };
 
     function openVideoInter() {
         if (buttonsAreActive || interfaceButtonActive) {
@@ -49,21 +54,37 @@
                 tabletOpen = false;
                 sendMessage(event);
             }
+        } else if (webEventData.action == "videoSyncGateway") {
+            if (webEventData.useGatewayServer) {
+                gatewayUserData.wsUrl = "ws://" + webEventData.gatewayIp + ":7080";
+                gatewayUserData.useGatewayServer = true;
+                Entities.editEntity(_entityID, {
+                    userData: JSON.stringify(gatewayUserData)
+                });
+                Messages.sendMessage(videoPlayerChannel, event);
+            }
         }
     }
 
     script.preload = function (entityID) {
         videoPlayerChannel = entityID;
         Messages.subscribe(videoPlayerChannel);
-        entity = Entities.getEntityProperties(entityID, ["position", "dimensions", "rotation", "serverScripts"]);
+        entity = Entities.getEntityProperties(entityID, ["position", "dimensions", "rotation", "serverScripts", "userData"]);
         Entities.editEntity(entityID, {
             sourceUrl: sourceUrl,
             dpi: 8,
             maxFPS: 60,
             grab: {
                 "grabbable": false,
-            },
+            }
         });
+        try {
+            entityUserData = Object(JSON.parse(entity.userData));
+        } catch (e) {
+            Entities.editEntity(entityID, {
+                userData: JSON.stringify(gatewayUserData)
+            });
+        }
         if (entity.serverScripts == "") {
             Entities.editEntity(entityID, {
                 serverScripts: videoSyncServerScriptUrl
@@ -81,7 +102,13 @@
             if (messageData.action == "requestSync") {
                 webPanelTimeStamp = messageData.myTimeStamp;
             } else if (messageData.action == "RequestVideoLengthAndTimeStampResponse") {
+                var entityUserData = Entities.getEntityProperties(videoPlayerChannel, ["userData"]);
+                var UserData = JSON.parse(entityUserData.userData);
                 messageData.tabletId = videoPlayerChannel;
+                messageData.useGatewayServer = UserData.useGatewayServer;
+                messageData.serverConnected = UserData.serverConnected;
+                messageData.wsUrl = UserData.wsUrl;
+                console.log(JSON.stringify(messageData));
                 tablet.emitScriptEvent(JSON.stringify(messageData));
                 return;
             } else if (messageData.action == "volumeSlider") {
