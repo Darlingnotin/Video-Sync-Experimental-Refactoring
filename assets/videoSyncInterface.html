@@ -119,6 +119,9 @@
     </div>
     <h2 id="checkMark"></h2>
     <p id="description"></p>
+    <input type="checkbox" id="useGatewayCheckbox" onclick="useGatewayCheckbox()">
+    <label for="useGatewayCheckbox">Use Gateway Server</label><br>
+    <span id="gatewayServerInputField"></span>
 </body>
 <script>
     var timeoutIs = false;
@@ -144,6 +147,7 @@
             timeoutIs = true;
         }
     }
+
     function newVideoURL() {
         videoURL = document.getElementById("videoURL").value;
         var readyEvent = {
@@ -206,11 +210,14 @@
     EventBridge.scriptEventReceived.connect(function (message) {
         var messageData = JSON.parse(message);
         if (messageData.action == "RequestVideoLengthAndTimeStampResponse") {
-            if (messageData.myTimeStamp == myTimeStamp) {
-                document.getElementById("videoRange").max = messageData.length;
-                document.getElementById("videoRange").value = messageData.timeStamp;
-                videoLength = messageData.length;
-                tabletId = messageData.tabletId;
+            document.getElementById("videoRange").max = messageData.length;
+            document.getElementById("videoRange").value = messageData.timeStamp;
+            videoLength = messageData.length;
+            tabletId = messageData.tabletId;
+            if (messageData.serverConnected) { 
+                var serverConnectedToUrl = document.createElement("p"); 
+                serverConnectedToUrl.innerHTML = "<h1 style='color: green;'>Connected To Gateway Server " + messageData.wsUrl + "</h1>";
+                document.body.appendChild(serverConnectedToUrl);
             }
         } else if (messageData.action == "requestVideoPlayingStatusServerReply") {
             if (messageData.isLooping && !messageData.isLoopingStartAtBeginning) {
@@ -249,6 +256,26 @@
             myButtonActivated = 0;
         }
     });
+
+    function useGatewayCheckbox() {
+        var useGatewayCheckbox = document.getElementById("useGatewayCheckbox").checked;
+        if (useGatewayCheckbox) {
+            document.getElementById("gatewayServerInputField").innerHTML = "<input type='text' id='gatewayUrl' placeholder='Enter Server IP Address'><br><button class='myButton' onclick='connectToGateway()'>Connect</button>";
+        } else if (!useGatewayCheckbox) {
+            document.getElementById("gatewayServerInputField").innerHTML = "";
+        }
+    }
+
+    function connectToGateway() {
+        var gatewayUrl = document.getElementById("gatewayUrl").value;
+        var readyEvent = {
+            "action": "videoSyncGateway",
+            "useGatewayServer": true,
+            "gatewayIp": gatewayUrl
+        };
+        EventBridge.emitWebEvent(JSON.stringify(readyEvent));
+        document.getElementById("gatewayServerInputField").innerHTML = "";
+    }
 
 </script>
 
