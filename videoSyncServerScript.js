@@ -16,12 +16,17 @@
     var useGatewayServer = false;
     var gatewayServerConnected = false;
     var connectionAttempts = 0;
+    var gatewayUserData = {
+        "useGatewayServer": false,
+        "wsUrl": "",
+        "serverConnected": false,
+    };
 
     function openWebSocket() {
         var entityUserData = Entities.getEntityProperties(videoPlayerChannel, ["userData"]);
         var UserData = JSON.parse(entityUserData.userData);
         ws = new WebSocket(wsUrl);
-        ws.onopen = function() {
+        ws.onopen = function () {
             gatewayServerConnected = true;
             connectionAttempts = 0;
             UserData.serverConnected = true;
@@ -53,12 +58,18 @@
                 Script.setTimeout(function () {
                     connectionAttempts++;
                     openWebSocket();
-                    if (connectionAttempts >= 10) {
+                    if (connectionAttempts >= 5) {
                         useGatewayServer = false;
-                        UserData.useGatewayServer = false;
-                        Entities.editEntity(videoPlayerChannel, {
-                            userData: JSON.stringify(UserData)
-                        });
+                        gatewayUserData = {
+                            "useGatewayServer": false,
+                            "wsUrl": "",
+                            "serverConnected": false,
+                        };
+                        Script.setTimeout(function () {
+                            Entities.editEntity(videoPlayerChannel, {
+                                userData: JSON.stringify(gatewayUserData)
+                            });
+                        }, 6000);
                     }
                 }, 1000);
             }
@@ -141,6 +152,11 @@
                 Messages.sendMessage(videoPlayerChannel, message);
             }, 600);
         } else if (messageData.action == "videoSyncGateway") {
+            gatewayUserData.wsUrl = "ws://" + messageData.gatewayIp + ":7080";
+            gatewayUserData.useGatewayServer = true;
+            Entities.editEntity(videoPlayerChannel, {
+                userData: JSON.stringify(gatewayUserData)
+            });
             useGatewayServer = true;
             wsUrl = "ws://" + messageData.gatewayIp + ":7080";
             connectionAttempts = 0;
