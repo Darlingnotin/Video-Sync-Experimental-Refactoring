@@ -168,6 +168,17 @@
         timeStampInterval = Script.setInterval(function () {
             timeStamp = timeStamp + 1;
             pingTimer = pingTimer + 1;
+            if (timeStamp > videoLength) {
+                Script.clearInterval(timeStampInterval);
+                videoUrl = "";
+                videoPlaying = false;
+                intervalIsRunning = false;
+                var readyEvent = {
+                    action: "videoEnd"
+                };
+                var message = JSON.stringify(readyEvent);
+                Messages.sendMessage(videoPlayerChannel, message);
+            }
             if (pingTimer == 60) {
                 pingTimer = 0;
                 messageData.timeStamp = timeStamp;
