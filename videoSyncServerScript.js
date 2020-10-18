@@ -122,7 +122,8 @@
             videoPlaying = true;
             ping();
             var wsPlay = {
-                "action": "play"
+                "action": "play",
+                "timeStamp": messageData.timeStamp
             };
             if (useGatewayServer && gatewayServerConnected) {
                 ws.send(JSON.stringify(wsPlay));
@@ -131,7 +132,8 @@
             Script.clearInterval(timeStampInterval);
             intervalIsRunning = false;
             var wsPause = {
-                "action": "pause"
+                "action": "pause",
+                "timeStamp": messageData.timeStamp
             };
             if (useGatewayServer && gatewayServerConnected) {
                 ws.send(JSON.stringify(wsPause));
