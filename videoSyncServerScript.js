@@ -27,23 +27,12 @@
         var UserData = JSON.parse(entityUserData.userData);
         ws = new WebSocket(wsUrl);
         ws.onopen = function () {
-            var isLocked = Entities.getEntityProperties(videoPlayerChannel, ["locked"]);
-            if (isLocked) {
-                Entities.editEntity(videoPlayerChannel, {
-                    locked: false
-                }); 
-            }
             gatewayServerConnected = true;
             connectionAttempts = 0;
             UserData.serverConnected = true;
             Entities.editEntity(videoPlayerChannel, {
                 userData: JSON.stringify(UserData)
             });
-            if (isLocked) {
-                Entities.editEntity(videoPlayerChannel, {
-                    locked: true
-                }); 
-            }
         }
         ws.onmessage = function (evt) {
             var wsMessageData = JSON.parse(evt.data);
@@ -60,33 +49,16 @@
             }
         }
         ws.onclose = function () {
-            var isLocked = Entities.getEntityProperties(videoPlayerChannel, ["locked"]);
-            if (isLocked) {
-                Entities.editEntity(videoPlayerChannel, {
-                    locked: false
-                }); 
-            }
             gatewayServerConnected = false;
             UserData.serverConnected = false;
             Entities.editEntity(videoPlayerChannel, {
                 userData: JSON.stringify(UserData)
             });
-            if (isLocked) {
-                Entities.editEntity(videoPlayerChannel, {
-                    locked: true
-                });
-            }
             if (useGatewayServer) {
                 Script.setTimeout(function () {
                     connectionAttempts++;
                     openWebSocket();
                     if (connectionAttempts >= 5) {
-                        var isLocked = Entities.getEntityProperties(videoPlayerChannel, ["locked"]);
-                        if (isLocked) {
-                            Entities.editEntity(videoPlayerChannel, {
-                                locked: false
-                            }); 
-                        }
                         useGatewayServer = false;
                         gatewayUserData = {
                             "useGatewayServer": false,
@@ -97,11 +69,6 @@
                             Entities.editEntity(videoPlayerChannel, {
                                 userData: JSON.stringify(gatewayUserData)
                             });
-                            if (isLocked) {
-                                Entities.editEntity(videoPlayerChannel, {
-                                    locked: true
-                                }); 
-                            }
                         }, 6000);
                     }
                 }, 1000);
@@ -155,8 +122,7 @@
             videoPlaying = true;
             ping();
             var wsPlay = {
-                "action": "play",
-                "timeStamp": messageData.timeStamp
+                "action": "play"
             };
             if (useGatewayServer && gatewayServerConnected) {
                 ws.send(JSON.stringify(wsPlay));
@@ -165,8 +131,7 @@
             Script.clearInterval(timeStampInterval);
             intervalIsRunning = false;
             var wsPause = {
-                "action": "pause",
-                "timeStamp": messageData.timeStamp
+                "action": "pause"
             };
             if (useGatewayServer && gatewayServerConnected) {
                 ws.send(JSON.stringify(wsPause));
