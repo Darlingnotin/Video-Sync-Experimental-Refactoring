@@ -16,10 +16,15 @@
     var useGatewayServer = false;
     var gatewayServerConnected = false;
     var connectionAttempts = 0;
+    var lastUpdated = 0;
+    var currentUserData;
+    var checkCurrentUserDataTimeout;
+    var checkCurrentUserDataTimeoutIsRunning = false;
     var gatewayUserData = {
         "useGatewayServer": false,
         "wsUrl": "",
         "serverConnected": false,
+        "lastUpdated": 0
     };
 
     function openWebSocket() {
@@ -30,9 +35,10 @@
             gatewayServerConnected = true;
             connectionAttempts = 0;
             UserData.serverConnected = true;
-            Entities.editEntity(videoPlayerChannel, {
-                userData: JSON.stringify(UserData)
-            });
+            lastUpdated = Date.now();
+            UserData.lastUpdated = lastUpdated;
+            currentUserData = UserData;
+            updateUserData();
         }
         ws.onmessage = function (evt) {
             var wsMessageData = JSON.parse(evt.data);
@@ -51,29 +57,52 @@
         ws.onclose = function () {
             gatewayServerConnected = false;
             UserData.serverConnected = false;
-            Entities.editEntity(videoPlayerChannel, {
-                userData: JSON.stringify(UserData)
-            });
+            lastUpdated = Date.now();
+            UserData.lastUpdated = lastUpdated;
+            currentUserData = UserData;
+            updateUserData();
             if (useGatewayServer) {
                 Script.setTimeout(function () {
                     connectionAttempts++;
-                    openWebSocket();
-                    if (connectionAttempts >= 5) {
+                    if (connectionAttempts >= 2) {
                         useGatewayServer = false;
+                        lastUpdated = Date.now();
                         gatewayUserData = {
                             "useGatewayServer": false,
                             "wsUrl": "",
                             "serverConnected": false,
+                            "lastUpdated": lastUpdated
                         };
-                        Script.setTimeout(function () {
-                            Entities.editEntity(videoPlayerChannel, {
-                                userData: JSON.stringify(gatewayUserData)
-                            });
-                        }, 6000);
+                        currentUserData = gatewayUserData;
+                        currentUserData.lastUpdated = lastUpdated;
+                        updateUserData();
+                    } else {
+                        openWebSocket();
                     }
-                }, 1000);
+                }, 3000);
             }
         }
+    }
+
+    function updateUserData() {
+        Entities.editEntity(videoPlayerChannel, {
+            userData: JSON.stringify(currentUserData)
+        });
+        checkCurrentUserData();
+    }
+
+    function checkCurrentUserData() {
+        if (checkCurrentUserDataTimeoutIsRunning) {
+            clearTimeout(checkCurrentUserDataTimeout);
+        }
+        checkCurrentUserDataTimeout = Script.setTimeout(function () {
+            var entityUserData = Entities.getEntityProperties(videoPlayerChannel, ["userData"]);
+            var UserData = JSON.parse(entityUserData.userData);
+            if (UserData.lastUpdated != lastUpdated) {
+                console.log(currentUserData.lastUpdated + " " + lastUpdated);
+                updateUserData();
+            }
+        }, 6000);
     }
 
     this.preload = function (entityID) {
@@ -156,9 +185,9 @@
         } else if (messageData.action == "videoSyncGateway") {
             gatewayUserData.wsUrl = "ws://" + messageData.gatewayIp + ":7080";
             gatewayUserData.useGatewayServer = true;
-            Entities.editEntity(videoPlayerChannel, {
-                userData: JSON.stringify(gatewayUserData)
-            });
+            currentUserData = gatewayUserData;
+            console.log(JSON.stringify(currentUserData));
+            updateUserData();
             useGatewayServer = true;
             wsUrl = "ws://" + messageData.gatewayIp + ":7080";
             connectionAttempts = 0;
