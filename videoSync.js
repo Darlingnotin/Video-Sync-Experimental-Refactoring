@@ -139,6 +139,9 @@
         } else if (messageData.action == "now" && hasInteractedWithWebPage) {
             buttonsAreActive = true;
             hideAndRevealButtons(buttonsAreActive);
+        } else if (messageData.action == "webSocketConnected") {
+            tablet.emitScriptEvent(message);
+            return;
         }
         sendMessage(message);
     }
