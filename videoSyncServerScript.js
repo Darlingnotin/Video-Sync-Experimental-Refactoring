@@ -1,4 +1,6 @@
 (function () {
+    var videoSyncServerScriptUrl = Script.resolvePath("videoSyncServerScript.js");
+    var sourceUrl = Script.resolvePath("videoSync.html");
     var timeStamp;
     var messageData;
     var pingTimer = 0;
@@ -197,6 +199,39 @@
             wsUrl = "ws://" + messageData.gatewayIp + ":7080";
             connectionAttempts = 0;
             openWebSocket();
+        } else if (messageData.action == "reset") {
+            var entity = Entities.getEntityProperties(videoPlayerChannel, ["position", "dimensions", "rotation", "locked", "script"]);
+            var newVideoSync = Entities.addEntity({
+                type: "Web",
+                position: entity.position,
+                rotation: entity.rotation,
+                dimensions: entity.dimensions,
+                script: entity.script,
+                serverScripts: videoSyncServerScriptUrl,
+                sourceUrl: sourceUrl,
+                userData: JSON.stringify({
+                    "useGatewayServer": false,
+                    "wsUrl": "",
+                    "serverConnected": false,
+                    "lastUpdated": 0
+                }),
+                grab: {
+                    "grabbable": false,
+                }
+            });
+            if (entity.locked) {
+                Entities.editEntity(videoPlayerChannel, {
+                    locked: false
+                });
+                Script.setTimeout(function() {
+                    Entities.editEntity(newVideoSync, {
+                        locked: true
+                    });
+                    Entities.deleteEntity(videoPlayerChannel);
+                }, 3000);
+            } else {
+                Entities.deleteEntity(videoPlayerChannel);
+            }
         }
     }
 
