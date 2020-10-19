@@ -39,6 +39,11 @@
             UserData.lastUpdated = lastUpdated;
             currentUserData = UserData;
             updateUserData();
+            var webSocketConnected = {
+                "action": "webSocketConnected",
+                "wsUrl": currentUserData.wsUrl
+            };
+            Messages.sendMessage(videoPlayerChannel, JSON.stringify(webSocketConnected));
         }
         ws.onmessage = function (evt) {
             var wsMessageData = JSON.parse(evt.data);
