@@ -56,15 +56,10 @@
             }
         } else if (webEventData.action == "videoSyncGateway") {
             if (webEventData.useGatewayServer) {
-                /*
-                gatewayUserData.wsUrl = "ws://" + webEventData.gatewayIp + ":7080";
-                gatewayUserData.useGatewayServer = true;
-                Entities.editEntity(_entityID, {
-                    userData: JSON.stringify(gatewayUserData)
-                });
-                */
                 Messages.sendMessage(videoPlayerChannel, event);
             }
+        } else if (webEventData.action == "reset") {
+            Messages.sendMessage(videoPlayerChannel, event);
         }
     }
 
