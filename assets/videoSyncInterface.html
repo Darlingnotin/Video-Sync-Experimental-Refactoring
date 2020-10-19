@@ -214,8 +214,8 @@
             document.getElementById("videoRange").value = messageData.timeStamp;
             videoLength = messageData.length;
             tabletId = messageData.tabletId;
-            if (messageData.serverConnected) { 
-                var serverConnectedToUrl = document.createElement("p"); 
+            if (messageData.serverConnected) {
+                var serverConnectedToUrl = document.createElement("p");
                 serverConnectedToUrl.innerHTML = "<h1 style='color: green;'>Connected To Gateway Server " + messageData.wsUrl + "</h1>";
                 document.body.appendChild(serverConnectedToUrl);
             }
@@ -254,6 +254,12 @@
             document.getElementById("checkMark").innerHTML = "";
             document.getElementById("description").innerHTML = "";
             myButtonActivated = 0;
+        } else if (messageData.action == "webSocketConnected") {
+            var gatewayServerStatus = document.getElementById("gatewayServerStatus");
+            gatewayServerStatus.remove();
+            var serverConnectedToUrl = document.createElement("p");
+            serverConnectedToUrl.innerHTML = "<h1 style='color: green;'>Connected To Gateway Server " + messageData.wsUrl + "</h1>";
+            document.body.appendChild(serverConnectedToUrl);
         }
     });
 
@@ -275,6 +281,9 @@
         };
         EventBridge.emitWebEvent(JSON.stringify(readyEvent));
         document.getElementById("gatewayServerInputField").innerHTML = "";
+        var serverConnectedToUrl = document.createElement("p");
+        serverConnectedToUrl.innerHTML = "<h1 id='gatewayServerStatus' style='color: red;'>Waiting On Connection To Server ws://" + gatewayUrl + ":7080</h1>";
+        document.body.appendChild(serverConnectedToUrl);
     }
 
 </script>
