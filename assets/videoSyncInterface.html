@@ -106,6 +106,63 @@
             position: relative;
             top: 1px;
         }
+
+
+
+
+        .resetVideoSync {
+            box-shadow: inset 0px 1px 0px 0px #ffadad;
+            background: linear-gradient(to bottom, #f68787 5%, #e63131 100%);
+            background-color: #ededed;
+            border-radius: 6px;
+            border: 1px solid #a30000;
+            display: inline-block;
+            cursor: pointer;
+            color: #333333;
+            font-family: Arial;
+            font-size: 15px;
+            font-weight: bold;
+            padding: 6px 24px;
+            text-decoration: none;
+            text-shadow: 0px 1px 0px #ffffff;
+        }
+
+        .resetVideoSync:hover {
+            background: linear-gradient(to bottom, #c75757 5%, #cf9c9c 100%);
+            background-color: #dfdfdf;
+        }
+
+        .resetVideoSync:active {
+            position: relative;
+            top: 1px;
+        }
+
+        .resetVideoSyncActivated {
+            box-shadow: inset 0px 1px 0px 0px #ffadad;
+            background: linear-gradient(to bottom, #c09393 5%, #c34747 100%);
+            background-color: #ededed;
+            border-radius: 6px;
+            border: 1px solid #dcdcdc;
+            display: inline-block;
+            cursor: pointer;
+            color: #e2e2e2;
+            font-family: Arial;
+            font-size: 15px;
+            font-weight: bold;
+            padding: 6px 24px;
+            text-decoration: none;
+            text-shadow: 0px 1px 0px #ffffff;
+        }
+
+        .resetVideoSyncActivated:hover {
+            background: linear-gradient(to bottom, #da9e9e 5%, #d34545 100%);
+            background-color: #d15050;
+        }
+
+        .resetVideoSyncActivated:active {
+            position: relative;
+            top: 1px;
+        }
     </style>
 </head>
 
@@ -117,6 +174,8 @@
         <h2>Video slider</h2>
         <input type="range" min="0" max="2" value="1" step="0.01" class="slider" id="videoRange">
     </div>
+    <br>
+    <button onclick="resetVideoSync()" class="resetVideoSync">Reset</button>
     <h2 id="checkMark"></h2>
     <p id="description"></p>
     <input type="checkbox" id="useGatewayCheckbox" onclick="useGatewayCheckbox()">
@@ -270,6 +329,13 @@
         } else if (!useGatewayCheckbox) {
             document.getElementById("gatewayServerInputField").innerHTML = "";
         }
+    }
+
+    function resetVideoSync() {
+        var readyEvent = {
+            "action": "reset"
+        };
+        EventBridge.emitWebEvent(JSON.stringify(readyEvent));
     }
 
     function connectToGateway() {
