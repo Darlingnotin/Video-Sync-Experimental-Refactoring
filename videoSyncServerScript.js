@@ -190,15 +190,16 @@
                 Messages.sendMessage(videoPlayerChannel, message);
             }, 600);
         } else if (messageData.action == "videoSyncGateway") {
-            gatewayUserData.wsUrl = "ws://" + messageData.gatewayIp + ":7080";
-            gatewayUserData.useGatewayServer = true;
-            currentUserData = gatewayUserData;
-            console.log(JSON.stringify(currentUserData));
-            updateUserData();
-            useGatewayServer = true;
-            wsUrl = "ws://" + messageData.gatewayIp + ":7080";
-            connectionAttempts = 0;
-            openWebSocket();
+            if (!gatewayServerConnected) {
+                gatewayUserData.wsUrl = "ws://" + messageData.gatewayIp + ":7080";
+                gatewayUserData.useGatewayServer = true;
+                currentUserData = gatewayUserData;
+                updateUserData();
+                useGatewayServer = true;
+                wsUrl = "ws://" + messageData.gatewayIp + ":7080";
+                connectionAttempts = 0;
+                openWebSocket();
+            }
         } else if (messageData.action == "reset") {
             var entity = Entities.getEntityProperties(videoPlayerChannel, ["position", "dimensions", "rotation", "locked", "script"]);
             var newVideoSync = Entities.addEntity({
@@ -223,7 +224,7 @@
                 Entities.editEntity(videoPlayerChannel, {
                     locked: false
                 });
-                Script.setTimeout(function() {
+                Script.setTimeout(function () {
                     Entities.editEntity(newVideoSync, {
                         locked: true
                     });
