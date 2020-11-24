@@ -46,6 +46,8 @@
       <source id="mp4_src" src=" " type="video/webm">
     </video>
   </div>
+  
+  <button id="joinInButton" onclick="requestSync()">Join In</button>
 
   <script>
     var firstTime = true;
@@ -80,6 +82,7 @@
           document.getElementById('video').src = messageData.videoUrl;
           document.getElementById('video').currentTime = messageData.timeStamp;
           firstTime = false;
+          document.getElementById("joinInButton").hidden = true;
           if (!messageData.videoPlaying) {
             var vid = document.getElementById("video");
             vid.onloadeddata = function () {
@@ -123,6 +126,7 @@
           document.getElementById('video').src = "http://";
           firstTime = true;
           HasBeenClicked = false;
+          document.getElementById("joinInButton").hidden = false;
         } else if (messageData.buttonAction == "volumeButtonMinus") {
           var video = document.getElementById('video');
           var volume = video.volume;
