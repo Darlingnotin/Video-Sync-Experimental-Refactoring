@@ -1,3 +1,10 @@
+// Copyright (c) 2020 Danielle Arlington.
+
+// This program is free software: you can redistribute it and/or modify  
+// it under the terms of the GNU General Public License as published by  
+// the Free Software Foundation, version 3.
+// https://www.gnu.org/licenses/gpl-3.0.en.html
+
 (function () {
     var videoSyncServerScriptUrl = Script.resolvePath("videoSyncServerScript.js");
     var sourceUrl = Script.resolvePath("videoSync.html");
