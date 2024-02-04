@@ -163,6 +163,8 @@
       } else if (messageData.action == "videoEnd") {
         document.getElementById("video").src = "";
         document.getElementById('video').poster = "assets/clickToWatch.png"
+      } else if (messageData.action == "firstClick") {
+        requestSync();
       }
     });
 
