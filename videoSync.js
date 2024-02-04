@@ -95,8 +95,17 @@
             });
         }
         _entityID = entityID;
+        Script.addEventHandler(_entityID, "mousePressOnEntity", onFirstClick);
         Entities.webEventReceived.connect(onWebEvent);
         addButtons();
+    }
+
+    function onFirstClick() {
+        Entities.emitScriptEvent(_entityID, JSON.stringify({
+            action: "firstClick"
+        }));
+        console.log("onFirstClick");
+        Script.removeEventHandler(_entityID, "mousePressOnEntity", onFirstClick);
     }
 
     function onWebEvent(uuid, event) {
@@ -282,6 +291,7 @@
                 actOnButtonPressed("pause");
                 break;
             case leaveButtonUuid:
+                Script.addEventHandler(_entityID, "mousePressOnEntity", onFirstClick);
                 console.log("LeaveButtonUuid Yes");
                 actOnButtonPressed("leave");
                 buttonsAreActive = false;
@@ -377,6 +387,7 @@
         Script.removeEventHandler(leaveButtonUuid, "mousePressOnEntity", evaluateWhichButtonPressed);
         Script.removeEventHandler(pauseButtonUuid, "mousePressOnEntity", evaluateWhichButtonPressed);
         Script.removeEventHandler(playButtonUuid, "mousePressOnEntity", evaluateWhichButtonPressed);
+        Script.addEventHandler(_entityID, "mousePressOnEntity", onFirstClick);
     }
 
     Messages.messageReceived.connect(onMessageReceived);
