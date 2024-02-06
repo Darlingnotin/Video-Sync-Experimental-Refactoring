@@ -111,7 +111,8 @@
               videoUrl: messageData.videoUrl,
               length: v.duration,
               timeStamp: v.currentTime,
-              myTimeStamp: myTimeStamp
+              myTimeStamp: myTimeStamp,
+              aspectRatio: v.videoWidth / v.videoHeight
             };
             EventBridge.emitWebEvent(JSON.stringify(readyEvent));
             clearInterval(videoLoadedSendMessageInterval);
