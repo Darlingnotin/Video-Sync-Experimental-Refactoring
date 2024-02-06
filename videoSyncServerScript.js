@@ -156,6 +156,12 @@
             if (useGatewayServer && gatewayServerConnected) {
                 ws.send(JSON.stringify(wsNow));
             }
+            console.log(JSON.stringify(messageData));
+            var entity = Entities.getEntityProperties(videoPlayerChannel);
+            entity.dimensions.y = (entity.dimensions.x / messageData.aspectRatio) + .1
+            Entities.editEntity(videoPlayerChannel, {
+                dimensions: entity.dimensions
+            });
         } else if (messageData.action == "play") {
             timeStamp = messageData.timeStamp;
             if (intervalIsRunning) {
